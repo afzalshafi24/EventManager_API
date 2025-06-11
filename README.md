@@ -7,9 +7,6 @@ Also includes two emulators to simulate the metric triggering application and re
 - [Installation](#installation)
 - [Required Libraries](#Required_Libraries)
 - [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
 
 ## Installation
 1. Clone Repo from https://github.com/afzalshafi24/ECQL_Webapp
