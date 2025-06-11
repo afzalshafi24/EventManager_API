@@ -69,5 +69,20 @@ Also includes two emulators to simulate the metric triggering application and re
                
 
 ## Usage
+1. Navigate to the Parent Directory
+2. Start the API script with the following command
 ```bash
-# Example command
+python .\API\main.py
+```
+3. Start the SPARK Emulator with the following command
+```bash
+python .\SPARK_Emulator\SPARK_Emulator.py
+```
+4. Start the ECQL Emulator with the following command
+```bash
+python .\ECQL_Emulator\ECQL_emulator.py .\ECQL_Emulator\ECQL_emulator_config.ini
+```
+4. Start the Web App with the following command
+```bash
+ streamlit.exe run .\Visualization\app.py
+```
