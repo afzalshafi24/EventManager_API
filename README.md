@@ -5,7 +5,7 @@ Also includes two emulators to simulate the metric triggering application and re
 
 ## Table of Contents
 - [Installation](#installation)
-- [Required Libraries](#Libraries)
+- [Required Libraries](#Required_Libraries)
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
@@ -15,7 +15,7 @@ Also includes two emulators to simulate the metric triggering application and re
 1. Clone Repo from https://github.com/afzalshafi24/ECQL_Webapp
 2. Make sure you have the needed libraries from Python
 
-## Libraries
+## Required_Libraries
 	altair==5.5.0
 	annotated-types==0.7.0
 	anyio==4.9.0
