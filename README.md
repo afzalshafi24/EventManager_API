@@ -5,6 +5,7 @@ Also includes two emulators to simulate the metric triggering application and re
 
 ## Table of Contents
 - [Installation](#installation)
+- [Required Libraries](#Required Libraries)
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
