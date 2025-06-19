@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import time
 import requests
-from app_config import URI, DF_URI,  METRIC_CFG, SCIDS, MIN_THRESH, MAX_THRESH
+from app_config import URI, MIN_THRESH, MAX_THRESH
 from datetime import datetime
 import pandas as pd
 import altair as alt
@@ -20,28 +20,41 @@ def check_thresholds(val):
         else:
             return 'background-color: green'
 
-def fetch_dataframe():
-    #Fetch DataFrame from API
-    response = requests.get(DF_URI)
+def extract_response_status(response):
+    #Extract Response Status
     if response.status_code == 200:
-        data = response.json()
-        return pd.DataFrame.from_dict(data['data'], orient='columns')
-    
+        return response.json()
     else:
          print(f"Error accessing items endpoint: {response.status_code}, Response: {response.text}")
          return None
 
+def fetch_dataframe():
+    #Fetch DataFrame from API
+    response = requests.get(URI + '/get_dataframe')
+    data = extract_response_status(response)
+    if data is not None:
+        return pd.DataFrame.from_dict(data['data'], orient='columns')
+    else:
+        return data
+
+def fetch_unique_scids_metric(col_name):
+    #Get Unique Elements in a database
+    response = requests.get(URI + '/get_unique_db_vals', params={"col_name": col_name})
+    data = extract_response_status(response) 
+    
+    if extract_response_status(response) is not None:
+        return data['data']
+    else:
+        return data
 
 def fetch_data(scid, metric):
     #Fetch Data from API
-    response = requests.get(URI, params={"scid": scid, "metric": metric})
-    if response.status_code == 200:
-        data = response.json()
+    response = requests.get(URI + '/get_data', params={"scid": scid, "metric": metric})
+    data = extract_response_status(response)
+    if data is not None:
         return len(data['data'])
-    
     else:
-         print(f"Error accessing items endpoint: {response.status_code}, Response: {response.text}")
-         return None
+        return None 
 
 def get_scid_metric_data(scids, metric):
     #Create a list of metric data for listed scids
@@ -57,7 +70,7 @@ def get_scid_metric_data(scids, metric):
 def init_session_state_data():
     #Initialize session state data
     session_state_data = {}
-    for m in METRIC_CFG.keys():
+    for m in METRICS:
         session_state_data[m] = {}
         session_state_data[m]['time'] = [datetime.now()]
         for s in COLUMN_NAMES:
@@ -72,8 +85,12 @@ def update_session_state_data(smd, metric):
 
 # Streamlit app
 # Set the page config to use dark mode
-st.set_page_config(page_title="ECQL Triggers", layout="centered", initial_sidebar_state="expanded")
-st.title(f"ECQL Metric Triggers")
+st.set_page_config(page_title="Metric-Based Event Triggers Dashboard", layout="centered", initial_sidebar_state="expanded")
+st.title(f"Metric-Based Event Triggers Dashboard")
+
+SCIDS = fetch_unique_scids_metric('scid')
+METRICS = fetch_unique_scids_metric('metric_name')
+
 
 COLUMN_NAMES = [f'SCID{s}' for s in SCIDS]
 
@@ -83,7 +100,7 @@ st.sidebar.header("Data Filters:")
 #Create a SCID filter
 selected_scids = st.sidebar.multiselect("Select SCIDs to Filter:", options=SCIDS, default=SCIDS)
 
-selected_metric = st.sidebar.selectbox("Select Metric to Plot:", options=METRIC_CFG.keys())
+selected_metric = st.sidebar.selectbox("Select Metric to Plot:", options=METRICS)
 
 df = pd.DataFrame(columns=['METRIC_NAME'] + COLUMN_NAMES, index=[0])
 
@@ -121,7 +138,7 @@ threshold_line2 = alt.Chart(pd.DataFrame({'y': [MIN_THRESH]})).mark_rule(
     title='Min Threshold'
 )
 
-main_tab, spark_tab = st.tabs(['ECQL Triggers', 'SPARK'])
+main_tab, spark_tab = st.tabs(['Event Triggers', 'SPARK Jobs'])
 print(f'Look at {main_tab}')
 
 with main_tab:
@@ -135,7 +152,7 @@ with main_tab:
     
     # Update the DataFrame with all the metric data
     
-    for idx , metric in enumerate(METRIC_CFG.keys()):
+    for idx , metric in enumerate(METRICS):
         smd = get_scid_metric_data(SCIDS, metric)
         #Update Session State data
         update_session_state_data(smd, metric)
@@ -153,11 +170,12 @@ with main_tab:
     metric_tigger_table.dataframe(styled_df, use_container_width=True)
 
 
-    df_plot = pd.DataFrame(st.session_state.data[selected_metric])
+    
     #df_plot.set_index('time', inplace=True)
     # Display title and labels
     # Create the Altair chart
     try:
+        df_plot = pd.DataFrame(st.session_state.data[selected_metric])
         chart = alt.Chart(df_plot).transform_fold(
             plot_column_names,
             as_=['Plot', 'Value']
@@ -194,7 +212,7 @@ with spark_tab:
     #Create a SCID and metric filter for SPARK tab
     #selected_scids_spark = st.multiselect("Select SCIDs to Filter:", options=SCIDS, default=SCIDS)
 
-    selected_metric_spark = st.multiselect("Select Metric to Plot:", options=METRIC_CFG.keys())
+    selected_metric_spark = st.multiselect("Select Metric(s):", options=METRICS, default=METRICS)
     big_df = fetch_dataframe()
     
     # Filter the DataFrame

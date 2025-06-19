@@ -37,6 +37,7 @@ def process_spark_jobs():
             response = requests.post(spark_job.endpoint, json={'job_id': spark_job.job_id, 'url': DUMMY_LINK})
         else:
             print('No Spark Jobs in Queue')
+            time.sleep(3)
 
 # Define a POST endpoint
 @app.post("/")

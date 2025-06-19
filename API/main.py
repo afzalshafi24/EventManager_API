@@ -101,6 +101,11 @@ async def get_dataframe():
     df = db_handler.get_table_as_dataframe()
     return {f"data" : df.to_dict(orient='dict')}
 
+@app.get("/get_unique_db_vals")
+async def get_unique_db_vals(col_name:str):
+    #Get Unique values in database name
+    return {f"data" : db_handler.get_unique_elements(col_name)}
+
 @app.post("/spark_endpoint")
 def get_spark_request(spark_request: SparkRequest):
     print(f'Getting Request from SPARK {spark_request}')

@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Float, DateTime, Integer
+from sqlalchemy import create_engine, Column, String, Float, DateTime, Integer, distinct
 from sqlalchemy.orm import sessionmaker
 import os
 from sqlalchemy.ext.declarative import declarative_base
@@ -9,7 +9,7 @@ import pandas as pd
 
 Base  = declarative_base()
 
-TIME_STR_FORMAT = "%Y_%m_%d_%H%M%S"
+TIME_STR_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # Define the Metrics model
 class Metrics(Base):
@@ -19,6 +19,11 @@ class Metrics(Base):
     datetime = Column(DateTime, nullable=False)
     scid = Column(Integer, nullable=False)
     metric_name = Column(String, nullable=False)
+    value = Column(Float, nullable=True)
+    persistence = Column(String, nullable=False)
+    persistence_samples = Column(Integer, nullable=False)
+    on_change = Column(String, nullable=True)
+    source = Column(String, nullable=False)
     url = Column(String, nullable=True)
 
 
@@ -54,7 +59,15 @@ class DB_Handler():
         dt_object = datetime.strptime(metric_data.t, TIME_STR_FORMAT)
 
         # Create a new instance of the Metrics model
-        new_metric = Metrics(datetime=dt_object, scid=int(metric_data.scid), metric_name=metric_data.metric_name, url=None)
+        new_metric = Metrics(datetime=dt_object,
+                             scid=int(metric_data.scid), 
+                             metric_name=metric_data.metric_name, 
+                             value=metric_data.value,
+                             persistence = metric_data.persistence,
+                             persistence_samples = metric_data.persistence_samples,
+                             on_change = metric_data.on_change,
+                             source = metric_data.source,
+                             url=None)
 
         # Add the new instance to the session
         session.add(new_metric)
@@ -121,6 +134,18 @@ class DB_Handler():
 
         return last_id.id 
     
+    def get_unique_elements(self, col_name):
+        #Get Unique values in a database
+        
+        #Create Session
+        session = self.create_session()
+
+        # Query for unique elements dynamically
+        unique_values = session.query(distinct(getattr(Metrics, col_name))).all()
+
+        return [item[0] for item in unique_values]
+    
+
     def update_url_by_id(self, id, new_value):
         #Updates the url_link with new value
 
