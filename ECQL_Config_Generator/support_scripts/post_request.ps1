@@ -10,7 +10,7 @@ param (
 $time = (Get-Date -format "yyyy-MM-dd HH:mm:ss").ToString()
 
 #Create HashTable
-$hashtable = @{scid=$scid;t=$time;metric_name=$metric_name;value=0;persistence='';persistence_samples=0; on_change='False';source=$source}
+$hashtable = @{scid=$scid;t=$time;metric_name=$metric_name;source=$source}
 
 #Convert to JSON
 $json = $hashtable | ConvertTo-Json

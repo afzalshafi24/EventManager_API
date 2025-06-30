@@ -39,8 +39,8 @@ def process_spark_jobs():
             print('No Spark Jobs in Queue')
             time.sleep(3)
 
-# Define a POST endpoint
-@app.post("/")
+# Define a POST endpoint for the SPARK API
+@app.post("/api/analysis")
 def get_spark_jobs(spark_data: SparkData):
     spark_jobs_queue.append(spark_data)
     return {"message": spark_data}
