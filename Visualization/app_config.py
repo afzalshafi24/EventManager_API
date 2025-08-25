@@ -1,4 +1,4 @@
-URI = r'http://localhost:8000'
+URI = r'http://ITE00647722:8000'
 SCIDS = [10, 20, 30]
 COLUMN_NAMES = ['GEO 10', 'GEO 20', 'GEO 30']
 PLOT_COLORS = ['blue', 'orange', 'green']

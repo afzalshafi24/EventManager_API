@@ -1,0 +1,13 @@
+
+
+
+{"LOG_DIR": "logs",
+ "LOG_FILENAME": "api.log",
+ "DB_URL": "postgresql+psycopg2://event_mgr:event_mgr@localhost/events_db",
+ "IP": "ITE00647722",
+ "PORT": 8000,
+ "SPARK_URI": "http://localhost:8001/api/analysis",
+ "ORGINS": "http://ITE05019054:4000",
+ "DB_POLL_LIST": ["ecql"],
+ "DB_POLL_RATE": 10
+}

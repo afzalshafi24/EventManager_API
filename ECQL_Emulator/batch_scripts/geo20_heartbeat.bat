@@ -1,1 +1,1 @@
-Powershell -Command "C:\Users\J33423\Documents\SPICE\ecql_web\ECQL_Config_Generator\support_scripts\post_request.ps1 -scid 20 -metric_name 'Heartbeat' -source 'ECQL' -uri '127.0.0.1:8000/ECQL_store'"
+Powershell -Command "C:\Users\J33423\Documents\SPICE\ecql_web\ECQL_Config_Generator\support_scripts\post_request.ps1 -scid 20 -metric_name 'Heartbeat' -event_name 'GEOHEARTBEAT' -source 'ECQL' -uri 'http://ITE00647722:8000/ecql/submit'"

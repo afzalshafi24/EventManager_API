@@ -1,34 +1,58 @@
-from sqlalchemy import create_engine, distinct, inspect
+from sqlalchemy import create_engine, distinct, inspect, MetaData, select
 from sqlalchemy.orm import sessionmaker
 import os
 from datetime import datetime
 import pandas as pd 
 import sys
+import logging
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, String, Float, DateTime, Integer, Boolean
 
 # Add parent directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from DB_Handler.db_config import Base,TIME_STR_FORMAT, db_model_config
 
+
+#Time String Format
+TIME_STR_FORMAT = "%Y-%m-%d %H:%M:%S"
+TIME_STR_FORMAT_A = "%d-%b-%Y %H:%M:%S"
+
+Base  = declarative_base()
+
+# Define the Event Data DB model
+class Event_Data(Base):
+    __tablename__ = 'event_alerts'
+    unique_index = Column(Integer, primary_key=True, autoincrement=True)
+    scid = Column(Integer, nullable=False)
+    event_time = Column(DateTime, nullable=False)
+    event_rule_id = Column(Integer, nullable=True)
+    event_name = Column(String, nullable=False)
+    event_rule = Column(String, nullable=False)
+    event_src = Column(String, nullable=False)
+    spark_script = Column(String, nullable=True)
+    spark_report_id = Column(Integer, nullable=True)
+    gem_full_path = Column(String, nullable=True)
 
 
 class DB_Handler():
-    def __init__(self, db_file) :
+    def __init__(self, db_url) :
         #Store db file
-        self.db_file = db_file
+        self.db_url = db_url
+        self.logger = logging.getLogger(__name__)
+
+        #Check Database for initizialization
+        self.check_database()
 
     def check_database(self):
         #Check if database exists , if not create and initialze
-        self.engine = create_engine(f'sqlite:///{self.db_file}')
-
-        if not os.path.exists(self.db_file):
-            print(f"Database '{self.db_file}' does not exist. Initializing...")
-            self.initialize_database()
+        self.engine = create_engine(self.db_url)
+        self.initialize_database()
+        
            
          
     def initialize_database(self):
         #Initializes DB
         Base.metadata.create_all(self.engine)
-        print(f"Database '{self.db_file}' initialized with given tables")
+        self.logger.info(f"Database '{self.db_url}' initialized with given tables")
 
     def store_data(self, metric_data):
         #Stores a row of data into database of a given database
@@ -36,26 +60,22 @@ class DB_Handler():
         #Create Session
         session = self.create_session()
 
-        # Convert the time string to a datetime object
-        dt_object = datetime.strptime(metric_data.t, TIME_STR_FORMAT)
+        #Get Datetime Object
+        dt_object = self.get_dt_object(metric_data.event_time)
 
         # Create a new instance of the Metrics model by source
-        new_metric = db_model_config[metric_data.source]()
+        event_data_insert = Event_Data(scid= metric_data.scid,
+                                       event_time=dt_object,
+                                       event_rule_id= metric_data.event_rule_id,
+                                       event_name=metric_data.event_name,
+                                       event_rule=metric_data.event_rule,
+                                       event_src=metric_data.event_src,
+                                       spark_script=metric_data.spark_script,
+                                       gem_full_path= metric_data.gem_full_path)
 
-        #Convert metric data to dictionary
-        mdata = metric_data.__dict__
-
-        #set URL to None
-        mdata['url'] = None
-
-        #Populate db model with the metric data
-        for key, value in mdata.items():
-            if key == 't':
-                value = dt_object 
-            setattr(new_metric, key, value)
-
+        
         # Add the new instance to the session
-        session.add(new_metric)
+        session.add(event_data_insert)
 
         # Commit the session to save the data to the database
         session.commit()
@@ -63,11 +83,84 @@ class DB_Handler():
         # Close the session
         session.close()
     
+    def store_heartbeat(self, metric_data):
+        #Store Heartbeat Messages into Database
+
+        #Create Session
+        session = self.create_session()
+
+        #Get Datetime Object
+        dt_object = self.get_dt_object(metric_data.start_time)
+
+        #Get DB Model for Source Specific Heartbeat Messages
+        db_model = db_model_config["ECQL_Heartbeat"]
+
+        # Check if the record exists
+        record = session.query(db_model).filter(db_model.scid == metric_data.scid).first()
+        
+     
+        if record:
+            # Update the existing record
+            record.start_time = dt_object
+            self.logger.info(f"Updated {metric_data.source} Heartbeat for Scid {metric_data.scid} with new Time {metric_data.start_time}.")
+        else:
+            # Create a new record
+            new_record = db_model(scid=metric_data.scid, start_time=dt_object)
+            session.add(new_record)
+            self.logger.info(f"Added new {metric_data.source} Heartbeat for Scid {metric_data.scid} with new Time {metric_data.start_time}.")
+        
+        # Commit the session
+        session.commit()
+        
+    def get_dt_object(self, start_time):
+         # Convert the time string to a datetime object
+        try:
+            dt_object = datetime.strptime(start_time, TIME_STR_FORMAT)
+            self.logger.info(f"Using Time Format {TIME_STR_FORMAT}")
+            
+        except:
+            dt_object = datetime.strptime(start_time, TIME_STR_FORMAT_A)
+            self.logger.info(f"Using Time Format {TIME_STR_FORMAT_A}")
+             
+        return dt_object
+
     def create_session(self):
         #Create Session from engine 
         Session = sessionmaker(bind=self.engine)
         return Session()
         
+    def get_all_data(self):
+        #Queries all the data from the database
+        
+        #Create Session
+        session = self.create_session()
+
+        #Reflect the database schema
+        metadata = MetaData()
+        metadata.reflect(bind=self.engine)
+
+        data = {}
+
+        #Loop through table names and store in structure
+        for table_name, table in metadata.tables.items():
+            
+            data[table_name] = {}
+
+            #Get all column names
+            columns = [column.name for column in table.columns] 
+            for col_name in columns:
+
+                db_model = getattr(db_model_config[table_name], col_name)
+
+                data[table_name][col_name] = [item[0] for item in session.query(db_model).all()]
+            
+        
+        #Close session
+        session.close()
+
+        #Return data
+        return data
+
     def get_data(self, scid: int, metric: str, table_name:str):
         #Get Data for a given scid
 
@@ -110,9 +203,9 @@ class DB_Handler():
 
         #Create Session
         session = self.create_session()
-        Metrics = db_model_config[source]
+        Metrics =Event_Data
 
-        last_id = session.query(Metrics).order_by(Metrics.id.desc()).first()
+        last_id = session.query(Metrics).order_by(Metrics.unique_index.desc()).first()
 
         if last_id is None:
             return 0
@@ -120,7 +213,7 @@ class DB_Handler():
         #Close Session
         session.close()
 
-        return last_id.id 
+        return last_id.unique_index 
     
     def get_unique_elements(self, col_name, table_name):
         #Get Unique values in a database
@@ -136,33 +229,59 @@ class DB_Handler():
         return [item[0] for item in unique_values]
     
 
-    def update_url_by_id(self, id, new_value, tbl_name):
+    def update_column_by_id(self, id, col_name, new_value):
         #Updates the url_link with new value
 
         #Create Session
         session = self.create_session()
 
-        Metrics = db_model_config[tbl_name]
+        Metrics = Event_Data
 
          # Query for the entry with the specified ID
-        entry = session.query(Metrics).filter(Metrics.id == id).first()
+        entry = session.query(Metrics).filter(Metrics.unique_index == id).first()
 
         if entry:
             # Update the specific column
-            entry.url = new_value
+            setattr(entry, col_name, new_value)
             session.commit()  # Commit the changes to the database
-            print(f"Updated entry ID {id} with new value: {new_value}")
+            self.logger.info(f"Updated entry ID {id} {col_name} column with new value: {new_value}")
         else:
-            print(f"No entry found with ID {id}")
+            self.logger.warning(f"No entry found with ID {id}")
 
         #Close Session
         session.close()
+
+    def get_table(self):
+        #Get All database values for a given table
+
+        #Get DB model
+        db_model = Event_Data
+
+        #Create Session 
+        session = self.create_session()
+
+        table_data = session.query(db_model).all()
+
+        return table_data
 
     def get_table_as_dataframe(self, table_name):
         #Get Whole Table as dataframe
         df = pd.read_sql(f'SELECT * FROM {table_name}', con=self.engine)
         return df 
     
+    def find_new_events(self, src_name):
+        #Find new events for given src that do not have a spark_ID associated with it
+        
+        #Create session
+        session = self.create_session()
+
+        #Get data by source
+        data = session.query(Event_Data).filter(Event_Data.event_src == src_name, Event_Data.spark_report_id == None).all()
+
+        session.close()
+
+        return data
+
     def get_table_names(self):
         #Get a list of table names in given database
         

@@ -130,6 +130,7 @@ st.sidebar.header("Data Filters:")
 selected_source = st.sidebar.selectbox("Select Source:", options=SOURCE_NAMES)
 
 SCIDS = fetch_unique_scids_metric('scid', selected_source)
+print(SCIDS)
 METRICS = fetch_unique_scids_metric('metric_name', selected_source)
 COLUMN_NAMES = [f'SCID{s}' for s in SCIDS]
 #Create a SCID filter
