@@ -1,5 +1,0 @@
-#Event_Name;#Active_Flag;#Trigger_Threshold;#Start_Window;#End_Window;#Output_Pgem_Location;#VCID_List;#ZeroPAD;#AppHostName;#AppName;#EventRule
-GEOHEARTBEAT;t;300;;;;;;MFW-318;;SPA_STM_Spacecraft_Id:e==20
-GEOPARS;t;500;;;;;;MFW-318;;SPA_STM_Spacecraft_Id:e==20
-GEOXCD;t;500;;;;;;MFW-318;;SPA_STM_Spacecraft_Id:e==20
-GEOGMP;t;500;;;;;;MFW-318;;SPA_STM_Spacecraft_Id:e==20
