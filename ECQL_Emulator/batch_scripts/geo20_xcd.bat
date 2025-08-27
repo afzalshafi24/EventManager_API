@@ -1,0 +1,1 @@
+Powershell -Command "C:\Users\J33423\Documents\SPICE\ecql_web\ECQL_Config_Generator\support_scripts\post_request.ps1 -scid 20 -metric_name 'XCD' -event_name 'GEOXCD' -source 'ECQL' -uri 'http://ITE00647722:8000/ecql/submit'"
