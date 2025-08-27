@@ -1,1 +1,0 @@
-Powershell -Command "C:\Users\J33423\Documents\SPICE\ecql_web\ECQL_Config_Generator\support_scripts\post_request.ps1 -scid 40 -metric_name 'PARS' -event_name 'GEOPARS' -source 'ECQL' -uri 'http://ITE00647722:8000/ecql/submit'"
