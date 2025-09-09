@@ -1,0 +1,24 @@
+{
+    "scids":[1,2,3,4,5,6],
+    "uri": "http://ITE00647722:8001/event/submit",
+    "sleep_range" : [10,30],
+    "event_srcs": {
+        "astra":{
+            "PARS_Divergence":{"event_rule_id": 1,
+                            "event_rule": "CONVERGENCE == 0",
+                            "spark_script": "PARS_Divergence"},
+            "Node_Stall":{"event_rule_id": 2,
+                            "event_rule": "XCD_Status == 1 & XCD_Data == 0",
+                            "spark_script": "Node_Stall"}
+        },
+        "constellation_tracker":{
+            "FPA_VOLTAGE_FID":{"event_rule_id": 3,
+                            "event_rule": "FPA_VOLTAGE > 15",
+                            "spark_script": "fpa_voltage"},
+            "PCA_CURRENT_FID":{"event_rule_id": 4,
+                            "event_rule": "PCA_CURRENT > 2",
+                            "spark_script": "pca_current"}
+
+        }
+    }
+}
