@@ -1,8 +1,0 @@
-
-
-{"LOG_DIR": "logs",
- "LOG_FILENAME": "ecql_emulator.log",
- "DB_URL": "postgresql+psycopg2://event_mgr:event_mgr@localhost/events_db",
- "SLEEP_RANGE": [10,60]
- 
-}
